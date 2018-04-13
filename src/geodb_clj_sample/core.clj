@@ -2,33 +2,68 @@
   (:gen-class)
   (:require [geodb.driver :as geodb]))
 
+;;
+;; Evaluate these in the REPL to get a feel of how this works
+;;
+
+
+;; we will subscribe to a specific channel in a small area of London
+
+(def  subscribe-params {:channel "#beer"
+                        :location {:lat 51.49553
+                                   :lon -0.19506
+                                   :radius "10km"
+                                   :annotation "Lexham Gardens"}})
+
+;; we will publish from something close enough
+(def publish-params {:channel "#beer"
+                     :location {:lat 51.4779
+                                :lon -0.1311
+                                :annotation "Clapham North"}
+                     :payload {:msg "Drinks?"}})
+
+;;
+;; This is the most important: is represents a connection to the servers
+;;
+(def driver (geodb/make-driver {:host (or (System/getenv "GEODB_API_HOST") "api.geodb.io")}))
+
+;; Register a bunch of callbacks
+(def connect-p (promise))
+(def driver (-> driver
+                (geodb/on "connect" (fn [evt]
+                                      (println "Connected")))
+                (geodb/on "error" (fn [evt]
+                                    (println "Error")))
+                (geodb/on "disconnect" (fn [evt]
+                                         (println "Disconnected")))))
+
+;; Now the driver will connect
+(def driver (geodb/connect driver {:UserToken (System/getenv "GEODB_USER_TOKEN")
+                                   :ApiKey (System/getenv "GEODB_API_KEY")
+                                   :protocol :http ;; TODO remove
+                                   }))
+
 (defn -main
-  "I don't do a whole lot ... yet."
   [& args]
   (println "Hello, GeoDB!")
 
   ;; TODO with-open
 
-  (let [driver (geodb/make-driver
-                 {:host      "api.geodb.io"        ;; default
+  (let [
 
-                  ;; TODO use these
-                  :reconnect-timeout 5000
-                  :exp-backoff-ceiling 60000
+        ;;
+        ;; register a bunch of callback events
+        ;;
 
-                  ;; TODO data format to get back
-                  :packer :edn      ;; default to EDN
-                  :type :ws         ;; only type supported for now
-                  :protocol :https  ;; secure by default
-                  :callback-timeout 10000}
-                 )]
 
-    ;; connect
-    ;; note: the Driver is a simple Record, and is therefore immutable
-    ;;
-    (geodb/connect driver
-                   {:UserId    "<your-user-id-here>"
-                    :ApiKey    "<you-api-key-here>"})
+
+        ;;
+        ;; connect
+        ;; note: the Driver is a simple Record, and is therefore immutable
+        ;;
+
+        ]
+
 
     ;; subscribe
 
@@ -39,4 +74,19 @@
 
 
     ;; close
-    ))
+    )
+  )
+
+
+(comment
+
+  ;;
+  ;; here is a GeoDB Clojure tutorial
+  ;;
+
+
+
+
+
+
+  )

@@ -2,12 +2,16 @@
 
 How to GeoDB in Clojure
 
-## Installation
-
-
-
 ## Usage
 
+* Export you Api Key, and User Token, found in http://geodb.io/dashboard/security
+
+`export GEODB_API_HOST=api.geodb.io`
+`export GEODB_USER_TOKEN="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"`
+`export GEODB_API_KEY="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"`
+`lein repl`
+
+You should be able to publish/subscribe from the REPL
 
 ## License
 
