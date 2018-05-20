@@ -2,91 +2,82 @@
   (:gen-class)
   (:require [geodb.driver :as geodb]))
 
-;;
-;; Evaluate these in the REPL to get a feel of how this works
-;;
-
-
-;; we will subscribe to a specific channel in a small area of London
-
-(def  subscribe-params {:channel "#beer"
-                        :location {:lat 51.49553
-                                   :lon -0.19506
-                                   :radius "10km"
-                                   :annotation "Lexham Gardens"}})
-
-;; we will publish from something close enough
-(def publish-params {:channel "#beer"
-                     :location {:lat 51.4779
-                                :lon -0.1311
-                                :annotation "Clapham North"}
-                     :payload {:msg "Drinks?"}})
-
-;;
-;; This is the most important: is represents a connection to the servers
-;;
-(def driver (geodb/make-driver {:host (or (System/getenv "GEODB_API_HOST") "api.geodb.io")}))
-
-;; Register a bunch of callbacks
-(def connect-p (promise))
-(def driver (-> driver
-                (geodb/on "connect" (fn [evt]
-                                      (println "Connected")))
-                (geodb/on "error" (fn [evt]
-                                    (println "Error")))
-                (geodb/on "disconnect" (fn [evt]
-                                         (println "Disconnected")))))
-
-;; Now the driver will connect
-(def driver (geodb/connect driver {:UserToken (System/getenv "GEODB_USER_TOKEN")
-                                   :ApiKey (System/getenv "GEODB_API_KEY")
-                                   :protocol :http ;; TODO remove
-                                   }))
-
 (defn -main
   [& args]
   (println "Hello, GeoDB!")
-
-  ;; TODO with-open
-
-  (let [
-
-        ;;
-        ;; register a bunch of callback events
-        ;;
-
-
-
-        ;;
-        ;; connect
-        ;; note: the Driver is a simple Record, and is therefore immutable
-        ;;
-
-        ]
-
-
-    ;; subscribe
-
-
-    ;; publish
-
-    ;; get result!
-
-
-    ;; close
-    )
+  (println "Open the source file and REPL in to follow the tutorial")
   )
 
+;;
+;; A driver represents a connection to the servers
+;;
+
+(def driver (geodb/make-driver {:host (or (System/getenv "GEODB_API_HOST") "api.geodb.io")
+                                :type :ws
+                                :protocol :http ;; TODO :https
+                                :packer :edn
+                                :ws-kalive-ms 20000
+                                :callback-timeout 10000}))
+
+(def connect-p (promise))
+
+;; Register event handlers
+(def driver (-> driver
+                (geodb/on "connect" (fn [evt]
+                                      (println "connect event")
+                                      (deliver connect-p evt)))
+                (geodb/on "error" (fn [evt]
+                                    (println "error event")))
+                (geodb/on "disconnect" (fn [evt]
+                                         (println "disconnected event")))))
 
 (comment
+  (do
 
-  ;;
-  ;; here is a GeoDB Clojure tutorial
-  ;;
+    ;; Now the driver will connect
+    (def driver (geodb/connect driver {:UserToken (java.util.UUID/fromString
+                                                    (System/getenv "GEODB_USER_TOKEN"))
+                                       :ApiKey (java.util.UUID/fromString
+                                                 (System/getenv "GEODB_API_KEY"))}))
+
+    (deref connect-p)
+    (println "Connected? " (:open? (geodb/connection-state driver))) ;; true
+
+    (println "Auth-state" (geodb/auth-status driver))
+
+    (def driver (geodb/subscribe driver {:channel "#test"}
+                                 (fn [err data metadata]
+                                   (println "data received on channel #test" err data metadata))))
+
+    (def driver (geodb/publish driver {:channel "#test"
+                                       :payload {:msg "anything goes in the payload"}}
+                               (fn publish-callback [err data metadata]
+                                 (println "publish " err "-" data "-" metadata))))
 
 
+    ;; try different variations now!
 
+    (def driver (geodb/subscribe driver {:channel "#test"
+                                         :location {:lat 48.8566
+                                                    :lon 2.3522
+                                                    :radius "50km"
+                                                    :annotation "Paris"}}
+                                 (fn [err data metadata]
+                                   (println "data received in Paris#test" err data metadata))))
 
+    (def driver (geodb/publish driver {:channel "#test"
+                                       :location {:lat 48.8049
+                                                  :lon 2.1204
+                                                  ;;:radius "5km"
+                                                  :annotation "Versailles"}
+                                       :payload {:msg "anything goes in the payload"}}
+                               (fn publish-callback [err data metadata]
+                                 (def err err)
+                                 (def data data)
+                                 (def metadata metadata)
+                                 (println "publish " err "-" data "-" metadata))))
+    )
 
-
+  ;; try these in you REPL!
+  (keys (geodb/list-subscriptions driver))
   )
