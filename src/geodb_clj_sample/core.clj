@@ -12,7 +12,7 @@
 ;; A driver represents a connection to the servers
 ;;
 
-(def driver (geodb/make-driver {:host (or (System/getenv "GEODB_API_HOST") "api.geodb.io")
+(def driver (geodb/make-driver {:host (or (System/getenv "GEODB_API_HOST") "geodb.io")
                                 :type :ws
                                 :protocol :http ;; TODO :https
                                 :packer :edn
@@ -43,7 +43,7 @@
     (deref connect-p)
     (println "Connected? " (:open? (geodb/connection-state driver))) ;; true
 
-    (println "Auth-state" (geodb/auth-status driver))
+    (println "Auth-state" (geodb/auth-status driver)) ;; {:status :authenticated}
 
     (def driver (geodb/subscribe driver {:channel "#test"}
                                  (fn [err data metadata]
@@ -63,7 +63,7 @@
                                                     :radius "50km"
                                                     :annotation "Paris"}}
                                  (fn [err data metadata]
-                                   (println "data received in Paris#test" err data metadata))))
+                                   (println "data received in Paris#test" err " - "data " - "metadata))))
 
     (def driver (geodb/publish driver {:channel "#test"
                                        :location {:lat 48.8049
@@ -72,10 +72,7 @@
                                                   :annotation "Versailles"}
                                        :payload {:msg "anything goes in the payload"}}
                                (fn publish-callback [err data metadata]
-                                 (def err err)
-                                 (def data data)
-                                 (def metadata metadata)
-                                 (println "publish " err "-" data "-" metadata))))
+                                 (println "publish " err " - " data " - " metadata))))
     )
 
   ;; try these in you REPL!
