@@ -1,9 +1,10 @@
 (ns geodb-clj-sample.core
-  (:require [geodb.config]
-            [geodb.protocol]
-            [geodb.driver :as driver]
+  (:require [geodb.api :as geodb]
+            [geodb.config]
             [geodb.create]
-            [geodb.api :as geodb]))
+            [geodb.driver :as driver]
+            [geodb.protocol]
+            [geodb.reader]))
 
 (defn -main
   [& args]
@@ -19,9 +20,7 @@
   ;; Evaluate these forms in your REPL
   ;;
 
-  (geodb.api/init {:host (or (System/getenv "GEODB_API_HOST") "geodb.io")
-                   :type :ws
-                   :protocol :https})
+  (geodb.api/init {})
 
   (geodb.api/on "ready"
                 (fn [evt]
@@ -33,23 +32,30 @@
   (geodb.api/on "disconnect" (fn [evt]
                                (println "disconnected event")))
 
-  (geodb.api/connect {:UserToken (java.util.UUID/fromString
-                                   (System/getenv "GEODB_USER_TOKEN"))
-                      :ApiKey (java.util.UUID/fromString
-                                (System/getenv "GEODB_API_KEY"))})
+  (def connect-res @(geodb.api/connect {:UserToken (java.util.UUID/fromString (System/getenv "GEODB_USER_TOKEN"))
+                                        :ApiKey (java.util.UUID/fromString (System/getenv "GEODB_API_KEY"))}))
 
   (def channel (str "#test-" (System/currentTimeMillis)))
 
-  (geodb.api/subscribe {:channel channel}
-                       (fn [err data metadata]
-                         (println "data received on channel #test" err data metadata)))
+  (def sub-res @(geodb.api/subscribe {:channel channel}
+                                  (fn [err data metadata]
+                                    (println "data received on channel #test" err data metadata))))
 
+  (def subscription-id (get-in sub-res [:data :id]))
 
-  (def res (geodb.api/publish {:channel channel
-                               :payload {:ok "true"}}
-                              (fn publish-callback [err data metadata]
-                                (println "data sent on channel #test" err data metadata))))
+  (def pub-res @(geodb.api/publish {:channel channel
+                                    :payload {:ok "true"}}
+                                   (fn publish-callback [err data metadata]
+                                     (println "data sent on channel #test" err data metadata))))
 
+  (def r @(geodb.api/reader {:subscriptionId (get-in sub-res [:data :id])
+                             :startMessageId "earliest"}))
+
+  ;; replay messages from the beginning
+  (while (:data @(geodb.reader/hasMessageAvailable r))
+    (println "message " @(geodb.reader/readNext r)))
+
+  @(geodb.reader/close r)
 
   )
 

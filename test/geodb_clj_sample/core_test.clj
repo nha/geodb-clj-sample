@@ -1,6 +1,7 @@
 (ns geodb-clj-sample.core-test
   (:require [clojure.test :refer [deftest is testing]]
-            [geodb.api])
+            [geodb.api]
+            [geodb.reader])
   (:import [java.util.concurrent CompletableFuture]))
 
 (defn- get-token []
