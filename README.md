@@ -4,7 +4,7 @@ How to GeoDB in Clojure
 
 ## Usage
 
-* Export you Api Key, and User Token, found in https://geodb.io/dashboard/security
+* Export you Api Key, and User Token, found in https://geodb.io/dashboard/security.html
 
 `export GEODB_USER_TOKEN="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"`
 `export GEODB_API_KEY="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"`
